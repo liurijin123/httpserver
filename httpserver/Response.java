@@ -1,5 +1,6 @@
 package httpserver;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -10,7 +11,7 @@ import java.util.Date;
 public class Response {
 
 	private Socket socket;
-	BufferedWriter bw;
+	BufferedOutputStream bos;
 	
 	StringBuilder headInfo;
 	StringBuilder context;
@@ -23,7 +24,7 @@ public class Response {
 		this();
 		this.socket = socket;
 		try {
-			bw = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+			bos = new BufferedOutputStream(socket.getOutputStream());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -61,7 +62,7 @@ public class Response {
 			context.append("<li><a href=\"").append(url).append(str).append("/\"").append(">").append(str).append("</a></li>");
 		}
 		context.append("</HTML>");
-		contextlen = context.length();
+		contextlen = context.toString().getBytes().length;
 	}
 	//发送到浏览器
 	public void send(int code){
@@ -70,9 +71,9 @@ public class Response {
 				code = 500;
 			}
 			creatHeadInfo(code);
-			bw.append(headInfo.toString());
-			bw.append(context.toString());
-			bw.flush();
+			bos.write(headInfo.toString().getBytes());
+			bos.write(context.toString().getBytes());
+			bos.flush();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

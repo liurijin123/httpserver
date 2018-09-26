@@ -9,11 +9,13 @@ public class ServerThread extends Thread {
 	private Request request;
 	private Response response;
 	private int code = 200;
+	private String root ;
 	
-	public ServerThread(Socket socket) {
+	public ServerThread(Socket socket,String root) {
 		this.socket = socket;
 		request = new Request(socket);
 		response = new Response(socket);
+		this.root = root;
 		if(response == null){
 			code = 404;
 		}
@@ -21,10 +23,11 @@ public class ServerThread extends Thread {
 	
 	public void run(){
 		System.out.println(request.getUrl()); 
-		if(request.getUrl().equals("/favicon.ico")){
+		String url = request.getUrl();
+		if(url.equals("/favicon.ico")){
 			return;
 		}
-		response.dirfile("D:", request.getUrl());
+		response.fun(root, url);
 		response.send(code);
 	}
 }

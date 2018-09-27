@@ -23,7 +23,7 @@ public class Response {
 	byte[] contextByte;
 	byte[] headInfoByte;
 	
-	int contextlen;
+	int contextLen;
 	String contentType;
 	public Response(){
 		headInfo = new StringBuilder();
@@ -56,33 +56,52 @@ public class Response {
 		headInfo.append("Server:Server\r\n");
 		headInfo.append("Data:").append(new Date()).append("\r\n");
 		headInfo.append("Content-type:").append(contentType).append(";charset=UTF-8").append("\r\n");
-		headInfo.append("Content-Length:").append(contextlen).append("\r\n");
+		headInfo.append("Content-Length:").append(contextLen).append("\r\n");
 		headInfo.append("\r\n");
 		headInfoByte = headInfo.toString().getBytes();
 	}
-	public void fun(String root, String url) {
-		if(url.endsWith(".txt/")){
-			contentType = "text/paint";
-			viewText(root, url);
-		}else if(url.endsWith(".jpg/")){
-			contentType = "image/jpeg";
-			viewPicture(root, url);
-		}else {
-			contentType = "text/html";
-			dirFile(root, url);
-		}
-		
-	}
-	//显示图片
-	private void viewPicture(String root, String url) {
-		
+	//初始化
+	public void init(String root, String url) {
+
 		File file = new File(root+url);
+		if(file.isFile()){
+			if(url.endsWith(".txt/")){
+				contentType = "text/paint";
+				viewText(file);
+			}else if(url.endsWith(".jpg/")){
+				contentType = "image/jpeg";
+				responseMedia(file);
+			}else if(url.endsWith(".PNG/")){
+				contentType = "image/png";
+				responseMedia(file);
+			}else if(url.endsWith(".mp3/")){
+				contentType = "audio/mp3";
+				responseMedia(file);
+			}else if(url.endsWith(".avi/")){
+				contentType = "video/avi";
+				responseMedia(file);
+			}else{
+				contentType = "text/paint";
+				responseError();
+			}
+		}else{
+			dirFile(file,url);
+		}
+		contextLen = contextByte.length;
+	}
+	//响应未知文件
+	private void responseError() {
+		context.append("无法响应此文件类型(目前支持mp3，jpg，PNG，txt，avi)");
+		contextByte = context.toString().getBytes();
+	}
+	//响应图片音乐视频
+	private void responseMedia(File file) {
+		
 		byte[] bytes = new byte[(int) file.length()];
 		try {
 			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
 			bis.read(bytes);
 			contextByte = bytes;
-			contextlen = contextByte.length;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -90,9 +109,8 @@ public class Response {
 		
 	}
 	//显示文字
-	private void viewText(String root, String url) {
+	private void viewText(File file) {
 		
-		File file = new File(root+url);
 		try {
 			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
 			byte[] bytes = new byte[1024];
@@ -101,37 +119,33 @@ public class Response {
 				context.append(new String(bytes,0,len,"gb2312"));
 			}
 			contextByte = context.toString().getBytes();
-			contextlen = contextByte.length;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-	//构造正文_文件目录
-	public void dirFile(String root,String url){
-		File file = new File(root+url);
+	//构造文件目录
+	public void dirFile(File file, String url){
 		String[] dirfilenames = file.list();
 		context.append("<HTML>");
 		context.append("<head>");
 		context.append("<meta charset=\"utf-8\"/>");
 		context.append("</head>");
 		for(String str : dirfilenames){
-			context.append("<li><a href=\" ..").append(url).append(str).append("/\"").append(">").append(str).append("</a></li>");
+			context.append("<li><a href=\"").append(url).append(str).append("/\"").append(">").append(str).append("</a></li>");
 		}
 		context.append("</HTML>");
 		contextByte = context.toString().getBytes();
-		contextlen = contextByte.length;
 	}
 	//发送到浏览器
 	public void send(int code){
 		try {
-			if(headInfo==null){
-				code = 500;
-			}
 			creatHeadInfo(code);
-			bos.write(headInfoByte);
+			if(headInfoByte!=null && contextByte != null){;
+				bos.write(headInfoByte);
+				bos.write(contextByte);
+				bos.flush();
+			}
 			
-			bos.write(contextByte);
-			bos.flush();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

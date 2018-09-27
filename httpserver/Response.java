@@ -20,6 +20,8 @@ public class Response {
 	
 	StringBuilder headInfo;
 	StringBuilder context;
+	byte[] contextByte;
+	byte[] headInfoByte;
 	
 	int contextlen;
 	String contentType;
@@ -56,6 +58,7 @@ public class Response {
 		headInfo.append("Content-type:").append(contentType).append(";charset=UTF-8").append("\r\n");
 		headInfo.append("Content-Length:").append(contextlen).append("\r\n");
 		headInfo.append("\r\n");
+		headInfoByte = headInfo.toString().getBytes();
 	}
 	public void fun(String root, String url) {
 		if(url.endsWith(".txt/")){
@@ -73,19 +76,23 @@ public class Response {
 	//显示图片
 	private void viewPicture(String root, String url) {
 		
-//		context.append("<HTML>");
-//		context.append("<head>");
-//		context.append("<meta charset=\"utf-8\"/>");
-//		context.append("</head>");
-//		context.append("<img src=\"").append(root+url.substring(0, url.length()-1)).append("\" width=\"500\" height=\"500\">");
-//		context.append("</HTML>");
-//		contextlen = context.toString().getBytes().length;
-			
+		File file = new File(root+url);
+		byte[] bytes = new byte[(int) file.length()];
+		try {
+			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
+			bis.read(bytes);
+			contextByte = bytes;
+			contextlen = contextByte.length;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
 	//显示文字
 	private void viewText(String root, String url) {
 		
-		File file = new File(root+url.substring(0, url.length()-1));
+		File file = new File(root+url);
 		try {
 			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
 			byte[] bytes = new byte[1024];
@@ -93,7 +100,8 @@ public class Response {
 			while((len = bis.read(bytes))!=-1){
 				context.append(new String(bytes,0,len,"gb2312"));
 			}
-			contextlen = context.toString().getBytes().length;
+			contextByte = context.toString().getBytes();
+			contextlen = contextByte.length;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -110,8 +118,8 @@ public class Response {
 			context.append("<li><a href=\" ..").append(url).append(str).append("/\"").append(">").append(str).append("</a></li>");
 		}
 		context.append("</HTML>");
-		contextlen = context.toString().getBytes().length;
-		send(200);
+		contextByte = context.toString().getBytes();
+		contextlen = contextByte.length;
 	}
 	//发送到浏览器
 	public void send(int code){
@@ -120,9 +128,9 @@ public class Response {
 				code = 500;
 			}
 			creatHeadInfo(code);
-			bos.write(headInfo.toString().getBytes());
+			bos.write(headInfoByte);
 			
-			bos.write(context.toString().getBytes());
+			bos.write(contextByte);
 			bos.flush();
 		} catch (IOException e) {
 			e.printStackTrace();

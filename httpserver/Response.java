@@ -9,9 +9,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.Map;
 
 public class Response {
 
@@ -25,6 +28,7 @@ public class Response {
 	
 	int contextLen;
 	String contentType;
+	String contentRange;
 	public Response(){
 		headInfo = new StringBuilder();
 		context = new StringBuilder();
@@ -45,6 +49,9 @@ public class Response {
 		case 200:
 			headInfo.append("OK");
 			break;
+		case 206:
+			headInfo.append("Partial Content");
+			break;
 		case 404:
 			headInfo.append("NOT FOUND");
 			break;
@@ -53,16 +60,23 @@ public class Response {
 			break;
 		}
 		headInfo.append("\r\n");
-		headInfo.append("Server:Server\r\n");
-		headInfo.append("Data:").append(new Date()).append("\r\n");
-		headInfo.append("Content-type:").append(contentType).append(";charset=UTF-8").append("\r\n");
-		headInfo.append("Content-Length:").append(contextLen).append("\r\n");
+		headInfo.append("Server: Server\r\n");
+		headInfo.append("Data: ").append(new Date()).append("\r\n");
+		
+		if(contentRange != null){	
+			headInfo.append("Accept-Ranges: bytes\r\n");
+			headInfo.append("Content-Range: ").append(contentRange).append("\r\n");
+		}
+		headInfo.append("Content-Type: ").append(contentType).append(";charset=UTF-8").append("\r\n");
+		headInfo.append("Content-Length: ").append(contextLen).append("\r\n");
+//		headInfo.append("Connection: close").append("\r\n");
 		headInfo.append("\r\n");
 		headInfoByte = headInfo.toString().getBytes();
 	}
 	//初始化
-	public void init(String root, String url) {
+	public void init(String root, String url, Map<String, String> fieldMap) {
 
+		//判断文件类型
 		File file = new File(root+url);
 		if(file.isFile()){
 			if(url.endsWith(".txt/")){
@@ -76,7 +90,23 @@ public class Response {
 				responseMedia(file);
 			}else if(url.endsWith(".mp3/")){
 				contentType = "audio/mp3";
-				responseMedia(file);
+				if(fieldMap.get("Range") != null){
+					int start;
+					int end;
+					String str = fieldMap.get("Range");
+					String[] range = str.split("=")[1].split("-");
+					if(range.length == 2){
+						start = Integer.parseInt(range[0]);
+						end = Integer.parseInt(range[1]);
+					}else{
+						start = Integer.parseInt(range[0]);
+						end = (int) file.length() - 1;
+					}
+					contentRange = "bytes " + start + "-" + end + "/" + (int) file.length() ;
+					responseMedia(file, start, end);
+				}else{
+					responseMedia(file);
+				}		
 			}else if(url.endsWith(".avi/")){
 				contentType = "video/avi";
 				responseMedia(file);
@@ -103,10 +133,25 @@ public class Response {
 			bis.read(bytes);
 			contextByte = bytes;
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
+	}
+
+	private void responseMedia(File file, int start, int end) {
+
+		System.out.println("开始位置" + start);
+		System.out.println("结束位置" + end);
+		byte[] bytes = new byte[(int) file.length()];
+		try {
+			RandomAccessFile re = new RandomAccessFile(file,"r");
+			re.seek(start);
+			contextByte = new byte[end - start + 1];
+			re.read(contextByte);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 	}
 	//显示文字
 	private void viewText(File file) {
@@ -130,8 +175,12 @@ public class Response {
 		context.append("<head>");
 		context.append("<meta charset=\"utf-8\"/>");
 		context.append("</head>");
-		for(String str : dirfilenames){
-			context.append("<li><a href=\"").append(url).append(str).append("/\"").append(">").append(str).append("</a></li>");
+		if(dirfilenames.length != 0){
+			for(String str : dirfilenames){
+				context.append("<li><a href=\"").append(url).append(str).append("/\"").append(">").append(str).append("</a></li>");
+			}			
+		}else{
+			context.append("<h1>文件夹为空，请返回上层<br></h1>");
 		}
 		context.append("</HTML>");
 		contextByte = context.toString().getBytes();
@@ -139,8 +188,11 @@ public class Response {
 	//发送到浏览器
 	public void send(int code){
 		try {
+			if(contentRange != null){
+				code = 206;
+			}
 			creatHeadInfo(code);
-			if(headInfoByte!=null && contextByte != null){;
+			if(headInfoByte!=null && contextByte != null){
 				bos.write(headInfoByte);
 				bos.write(contextByte);
 				bos.flush();
@@ -149,6 +201,10 @@ public class Response {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	@Override
+	public String toString() {
+		return "返回实体字节数" + contextByte.length;
 	}
 	
 }

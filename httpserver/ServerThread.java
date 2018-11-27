@@ -2,6 +2,8 @@ package httpserver;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Map;
+import java.util.logging.Logger;
 
 public class ServerThread extends Thread {
 
@@ -22,12 +24,26 @@ public class ServerThread extends Thread {
 	}
 	
 	public void run(){
-		System.out.println(request.getUrl()); 
+		Logger log = Logger.getLogger("logServerThread"); 
 		String url = request.getUrl();
-		if(url.equals("/favicon.ico")){
-			return;
+		if(url.equals("/favicon.ico")){	
+			try {
+				socket.close();
+				return;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}	
 		}
-		response.fun(root, url);
+		log.info("请求地址：" + url + "\r\n" +
+				"请求字段" + "\r\n" + request);
+		Map<String, String> fieldMap = request.getfieldMap();
+		response.init(root, url, fieldMap);
+		log.info(response.toString());
 		response.send(code);
+//		try {
+//			socket.close();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 	}
 }

@@ -16,11 +16,15 @@ public class Server {
 
 	public static void main(String[] args) {
 		try {
+			//指定一个目录
+			String root = "D:";
 			ServerSocket server = new ServerSocket(8080);
+			int count = 0 ;
 			while(true){
 				Socket socket = server.accept();
-				System.out.println("建立连接");
-				ServerThread thread = new ServerThread(socket);
+				ServerThread thread = new ServerThread(socket,root);
+				count++;
+				System.out.println("线程："+count);
 				thread.start();
 			}	
 		} catch (IOException e) {

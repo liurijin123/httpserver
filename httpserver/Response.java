@@ -137,7 +137,7 @@ public class Response {
 		}
 		
 	}
-
+	//响应range请求
 	private void responseMedia(File file, int start, int end) {
 
 		System.out.println("开始位置" + start);

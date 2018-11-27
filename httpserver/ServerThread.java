@@ -24,11 +24,23 @@ public class ServerThread extends Thread {
 	}
 	
 	public void run(){
+//		while(true){
+//			Logger log = Logger.getLogger("logServerThread"); 
+//			request.init();
+//			String url = request.getUrl();
+//			log.info("请求地址：" + url + "\r\n" +
+//					"请求字段" + "\r\n" + request);
+//			Map<String, String> fieldMap = request.getfieldMap();
+//			log.info(response.toString());
+//			response.send(code);
+//		}
 		Logger log = Logger.getLogger("logServerThread"); 
+		request.init();
 		String url = request.getUrl();
 		if(url.equals("/favicon.ico")){	
+			log.info("/favicon.ico");
 			try {
-				socket.close();
+				socket.close();		
 				return;
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -40,10 +52,10 @@ public class ServerThread extends Thread {
 		response.init(root, url, fieldMap);
 		log.info(response.toString());
 		response.send(code);
-//		try {
-//			socket.close();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
+		try {
+			socket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

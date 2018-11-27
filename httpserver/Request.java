@@ -43,14 +43,34 @@ public class Request {
 		this.socket = socket;
 		try {
 			br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			//解析头信息
-			parseRequestInfo();
-			//解析字段
-			parseRequestField();
+//			//解析头信息
+//			parseRequestInfo();
+//			//解析字段
+//			parseRequestField();
 			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	//初始化
+	public void init(){	
+		try {
+			while(!br.ready()){
+				try {
+					System.out.println("正在准备。。。");
+					Thread.sleep(3000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				
+			}
+			//解析头信息
+			parseRequestInfo();
+			//解析字段
+			parseRequestField();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}	
 	}
 	//解析字段
 	private void parseRequestField() throws IOException { 
@@ -66,6 +86,7 @@ public class Request {
 	//解析头信息
 	private void parseRequestInfo() throws IOException {
 		String requestInfo = br.readLine();
+		if(requestInfo == null) return;
 		String[] strs = requestInfo.split(" ");
 		method = strs[0];
 		url = decode(strs[1],"utf-8");
